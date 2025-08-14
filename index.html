@@ -63,6 +63,12 @@
     100%{ opacity:1; transform: scale(1) }
   }
 
+  /* Intent arrow */
+  .intent-arrow{ filter:url(#edgeGlow) }
+  .intent-stem{ stroke:url(#flux); stroke-width:8; stroke-opacity:.85; fill:none }
+  .intent-head{ fill:url(#flux); opacity:.9 }
+  .intent-core{ fill: none; stroke:#79ffe1; stroke-dasharray:5 6; stroke-opacity:.5 }
+
   .panel{ padding:16px }
   .panel h2{ margin:0 0 10px; font-size:18px; letter-spacing:.4px }
   .group{ margin:12px 0 18px; padding:10px; border-radius:12px; border:1px dashed rgba(255,255,255,.12) }
@@ -77,14 +83,15 @@
   input[type="range"]::-moz-range-track{ height:8px; border-radius:8px; background:#2b3a5f }
   input[type="range"]::-moz-range-thumb{ width:18px; height:18px; border-radius:50%; background:#fff; border:2px solid #94c6ff; box-shadow: 0 0 0 6px rgba(121,255,225,.18) }
 
-  .controls{ display:flex; gap:10px; flex-wrap:wrap }
-  .btn{
+  select, .btn{
     background:#121a2a; color:var(--ink); border:1px solid rgba(255,255,255,.16);
     border-radius:12px; padding:10px 12px; cursor:pointer;
     transition: transform .08s ease, border-color .2s ease, box-shadow .2s ease;
   }
-  .btn:hover{ transform: translateY(-1px); border-color: rgba(121,255,225,.6); box-shadow: 0 0 0 4px rgba(121,255,225,.1) inset }
+  .btn:hover, select:hover{ transform: translateY(-1px); border-color: rgba(121,255,225,.6); box-shadow: 0 0 0 4px rgba(121,255,225,.1) inset }
   .mini{ font-size:12.5px; padding:6px 10px; opacity:.9 }
+
+  .controls{ display:flex; gap:10px; flex-wrap:wrap }
 
   .readouts{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; margin-top:8px }
   .meter{ background:#0e1422; border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:10px; text-align:center }
@@ -92,6 +99,7 @@
   .meter .ok{ color:var(--ok) } .meter .warn{ color:var(--warn) } .meter .bad{ color:var(--bad) }
 
   footer{ text-align:center; font-size:12.5px; color:var(--muted); padding:8px 12px 18px; user-select:none }
+  .hint{ color:var(--muted); font-size:12.5px }
 </style>
 </head>
 <body>
@@ -101,7 +109,7 @@
     <div class="stage">
       <svg id="graph" viewBox="0 0 1000 680" role="img" aria-labelledby="svgTitle svgDesc">
         <title id="svgTitle">Warp Drive Interaction Graph</title>
-        <desc id="svgDesc">INC, MEA, HO plus 12 SFGs in a toroidal ring; complete graph; continuous and burst particle flows; warp on repeated activation.</desc>
+        <desc id="svgDesc">INC, MEA, HO plus 12 SFGs in a toroidal ring; complete graph; continuous and burst particle flows; warp on repeated activation; CII Intent Vector bias.</desc>
 
         <defs>
           <filter id="edgeGlow" x="-50%" y="-50%" width="200%" height="200%">
@@ -115,6 +123,9 @@
           <linearGradient id="flux" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stop-color="#6aa8ff"/><stop offset="100%" stop-color="#79ffe1"/>
           </linearGradient>
+          <marker id="arrowHead" viewBox="0 0 16 16" refX="8" refY="8" markerWidth="12" markerHeight="12" orient="auto-start-reverse">
+            <path d="M0,0 L16,8 L0,16 L4,8 Z" class="intent-head"/>
+          </marker>
         </defs>
 
         <!-- edges layer -->
@@ -123,11 +134,14 @@
         <g id="particles"></g>
         <!-- nodes layer -->
         <g id="nodes"></g>
+        <!-- intent vector layer -->
+        <g id="intentLayer" class="intent-arrow"></g>
       </svg>
     </div>
 
     <div class="panel">
       <h2>Control Panel</h2>
+
       <div class="group">
         <h3>System Bias</h3>
         <div class="row">
@@ -137,6 +151,54 @@
         <div class="row">
           <label>Flux Intensity <output id="o_flux">0.80</output></label>
           <input id="flux" type="range" min="0" max="1" step="0.01" value="0.80"/>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>CII Control Core — Intent Vector</h3>
+        <div class="row">
+          <label>Bearing (°) <output id="o_bearing">0</output></label>
+          <input id="bearing" type="range" min="0" max="360" step="1" value="0"/>
+        </div>
+        <div class="row">
+          <label>Magnitude <output id="o_mag">0.70</output></label>
+          <input id="mag" type="range" min="0" max="1" step="0.01" value="0.70"/>
+        </div>
+        <div class="row">
+          <label>Gain <output id="o_gain">0.60</output></label>
+          <input id="gain" type="range" min="0" max="2" step="0.01" value="0.60"/>
+        </div>
+        <div class="row">
+          <label>Focus</label>
+          <select id="focus">
+            <option value="all">All Links</option>
+            <option value="core">Core Triangle</option>
+            <option value="sfg">SFG Ring</option>
+            <option value="target">Toward Target Node</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>Target Node</label>
+          <select id="targetNode">
+            <option value="INC">INC</option>
+            <option value="MEA">MEA</option>
+            <option value="HO">HO</option>
+            <option value="SFG1">SFG1</option><option value="SFG2">SFG2</option>
+            <option value="SFG3">SFG3</option><option value="SFG4">SFG4</option>
+            <option value="SFG5">SFG5</option><option value="SFG6">SFG6</option>
+            <option value="SFG7">SFG7</option><option value="SFG8">SFG8</option>
+            <option value="SFG9">SFG9</option><option value="SFG10">SFG10</option>
+            <option value="SFG11">SFG11</option><option value="SFG12">SFG12</option>
+          </select>
+        </div>
+        <div class="controls" style="margin-top:8px">
+          <button class="btn mini" id="pulse">Intent Pulse</button>
+          <label style="display:flex;align-items:center;gap:8px">
+            <input type="checkbox" id="autoSteer" /> Auto-steer to Coherence
+          </label>
+        </div>
+        <div class="hint" style="margin-top:6px">
+          The Intent Vector biases energy routing along its bearing; focus narrows which links are prioritized. Auto-steer continuously rotates intent toward higher coherence.
         </div>
       </div>
 
@@ -151,7 +213,7 @@
         <div class="meter"><div>Coherence</div><div class="v" id="coherenceVal">0.00</div></div>
         <div class="meter"><div>Warp Readiness</div><div class="v" id="readinessVal">Idle</div></div>
       </div>
-      <p style="margin-top:10px; color:var(--muted); font-size:12.5px">
+      <p style="margin-top:10px" class="hint">
         Tip: Click any node to emit a burst to all others. After several activations, the node <em>warps</em>.
       </p>
     </div>
@@ -165,6 +227,7 @@
   const nodeLayer = document.getElementById('nodes');
   const edgeLayer = document.getElementById('edges');
   const particleLayer = document.getElementById('particles');
+  const intentLayer = document.getElementById('intentLayer');
 
   // ----- Node definitions -----
   const CORE = [
@@ -210,6 +273,7 @@
       n.y = Math.max(60, Math.min(640, e.clientY - oy));
       n.g.setAttribute('transform', `translate(${n.x},${n.y})`);
       updateAllEdges();
+      updateIntentGraphics(); // keep overlay visually consistent
     });
     window.addEventListener('pointerup', ()=> dragging=false);
   }
@@ -224,8 +288,7 @@
   }
   function addEdge(a,b, main=false){
     const p = document.createElementNS(NS,'path');
-    p.setAttribute('class','edge' + (main?' main':''));
-    p.setAttribute('stroke','url(#flux)');
+    p.setAttribute('class','edge' + (main?' main':'')); p.setAttribute('stroke','url(#flux)');
     p.setAttribute('d', bez(a,b, main?40:24));
     edgeLayer.appendChild(p);
     edges.push({a,b,path:p,main});
@@ -251,7 +314,6 @@
   const particles = []; // {el, path, t, speed}
 
   function spawnParticleOnPath(path, intensity=1){
-    // cap & recycle
     if(particles.length >= MAX_PARTICLES){
       const old = particles.shift();
       if(old && old.el && old.el.parentNode) old.el.parentNode.removeChild(old.el);
@@ -265,7 +327,6 @@
     const p = { el, path, t: Math.random()*0.2, speed: 0.0022 + Math.random()*0.003*intensity };
     particles.push(p);
 
-    // place immediately so it's visible before first tick
     try {
       const len = path.getTotalLength();
       const pt  = path.getPointAtLength(p.t * len);
@@ -289,17 +350,120 @@
     }
   }
 
-  // Continuous emission (“streams”) based on Flux slider
+  // ----- CII Intent Vector -----
+  const bearing = document.getElementById('bearing');
+  const mag = document.getElementById('mag');
+  const gain = document.getElementById('gain');
+  const focusSel = document.getElementById('focus');
+  const targetSel = document.getElementById('targetNode');
+  const autoSteer = document.getElementById('autoSteer');
+
+  const o_bearing = document.getElementById('o_bearing');
+  const o_mag = document.getElementById('o_mag');
+  const o_gain = document.getElementById('o_gain');
+
+  [bearing, mag, gain].forEach(el => el.addEventListener('input', ()=>{
+    o_bearing.textContent = bearing.value;
+    o_mag.textContent = (+mag.value).toFixed(2);
+    o_gain.textContent = (+gain.value).toFixed(2);
+    updateIntentGraphics();
+  }));
+  [focusSel, targetSel].forEach(el => el.addEventListener('change', updateIntentGraphics));
+
+  function deg2rad(d){ return d*Math.PI/180; }
+  function intentVec(){
+    const th = deg2rad(+bearing.value);
+    const m = +mag.value;
+    return { x: Math.cos(th)*m, y: Math.sin(th)*m, th, m };
+  }
+
+  // Draw arrow + dashed intent core circle
+  const intentStem = document.createElementNS(NS,'path');
+  intentStem.setAttribute('class','intent-stem'); intentStem.setAttribute('marker-end','url(#arrowHead)');
+  const intentCore = document.createElementNS(NS,'circle');
+  intentCore.setAttribute('class','intent-core'); intentCore.setAttribute('cx', CENTER.x); intentCore.setAttribute('cy', CENTER.y); intentCore.setAttribute('r', CENTER.R+18);
+  const intentLabel = document.createElementNS(NS,'text');
+  intentLabel.setAttribute('x', CENTER.x); intentLabel.setAttribute('y', CENTER.y- (CENTER.R+36));
+  intentLabel.setAttribute('text-anchor','middle'); intentLabel.setAttribute('class','label'); intentLabel.textContent='CII Intent';
+  intentLayer.appendChild(intentCore); intentLayer.appendChild(intentStem); intentLayer.appendChild(intentLabel);
+
+  function updateIntentGraphics(){
+    const R = CENTER.R + 130;
+    const V = intentVec();
+    const x2 = CENTER.x + Math.cos(V.th)*R;
+    const y2 = CENTER.y + Math.sin(V.th)*R;
+    // shorten based on magnitude (0..1)
+    const scale = 0.35 + 0.65*V.m;
+    const xEnd = CENTER.x + (x2-CENTER.x)*scale;
+    const yEnd = CENTER.y + (y2-CENTER.y)*scale;
+    const ctrl = 0.18; // subtle curve
+    const cx = CENTER.x + (xEnd-CENTER.x)* (1-ctrl) - (yEnd-CENTER.y)*0.08;
+    const cy = CENTER.y + (yEnd-CENTER.y)* (1-ctrl) + (xEnd-CENTER.x)*0.08;
+    intentStem.setAttribute('d', `M ${CENTER.x} ${CENTER.y} Q ${cx} ${cy} ${xEnd} ${yEnd}`);
+  }
+  updateIntentGraphics();
+
+  function nodeById(id){ return ALL.find(n=>n.id===id); }
+
+  // Weighted edge selection by intent alignment & focus
+  function pickIntentWeightedEdge(){
+    const V = intentVec();
+    const g = +gain.value;
+    const focus = focusSel.value;
+    const target = nodeById(targetSel.value);
+
+    // precompute weights
+    let total = 0;
+    const weights = new Array(edges.length).fill(0);
+    for(let i=0;i<edges.length;i++){
+      const e = edges[i];
+      // focus filtering
+      if(focus==='core' && !(isCore(e.a) && isCore(e.b))) { weights[i]=0; continue; }
+      if(focus==='sfg' && !(isSFG(e.a) && isSFG(e.b))) { weights[i]=0; continue; }
+      if(focus==='target' && !(e.a===target || e.b===target)) { weights[i]=0; continue; }
+
+      // direction vector from center along edge midpoint
+      const mx=(e.a.x+e.b.x)/2, my=(e.a.y+e.b.y)/2;
+      const ex = mx - CENTER.x, ey = my - CENTER.y;
+      const elen = Math.hypot(ex,ey)||1;
+      const dx = ex/elen, dy = ey/elen;
+
+      // alignment in [-1,1] -> [0,1]
+      const align = Math.max(0, (dx*V.x + dy*V.y)); // clamp negatives to 0 so we don't starve the opposite side
+      const base = 1; // uniform base
+      const w = base * (1 + V.m * g * align);
+      weights[i]=w; total += w;
+    }
+    if(total<=0) return edges[(Math.random()*edges.length)|0];
+
+    // roulette wheel selection
+    let r = Math.random()*total;
+    for(let i=0;i<weights.length;i++){
+      r -= weights[i];
+      if(r<=0) return edges[i];
+    }
+    return edges[edges.length-1];
+  }
+
+  function isCore(n){ return n.id==='INC'||n.id==='MEA'||n.id==='HO'; }
+  function isSFG(n){ return n.id.startsWith('SFG'); }
+
+  // Continuous emission with intent bias
   function continuousEmit(){
     const flux = +document.getElementById('flux').value; // 0..1
-    // choose a few random edges each frame to emit on; scale with flux
     const emitEdges = Math.floor(2 + flux * 14);
     for(let i=0;i<emitEdges;i++){
-      const e = edges[(Math.random()*edges.length)|0];
+      const e = pickIntentWeightedEdge();
       const intensity = 0.6 + 0.9*flux;
       spawnParticleOnPath(e.path, intensity);
     }
   }
+
+  // Intent Pulse = burst from target along intent-biased neighbors
+  document.getElementById('pulse').addEventListener('click', ()=>{
+    const tgt = nodeById(targetSel.value) || CORE[0];
+    burstFromNode(tgt, 1.5);
+  });
 
   // ----- Warp mechanic -----
   const warpCounter = Object.fromEntries(ALL.map(n=>[n.id,0]));
@@ -312,15 +476,17 @@
       const j=6; n.x += (Math.random()*2-1)*j; n.y += (Math.random()*2-1)*j;
       n.g.setAttribute('transform', `translate(${n.x},${n.y})`);
       updateAllEdges();
+      updateIntentGraphics();
     }
   }
 
-  // Clicks: burst + warp counter
+  // Clicks: burst + warp counter + retarget (quick target toggle with Shift)
   ALL.forEach(n=>{
-    n.hit.addEventListener('click', ()=>{
+    n.hit.addEventListener('click', (evt)=>{
       burstFromNode(n, 1.2);
       warpCounter[n.id] += 1;
       if(warpCounter[n.id] >= WARP_THRESHOLD){ warpCounter[n.id]=0; doWarp(n); }
+      if(evt.shiftKey){ targetSel.value = n.id; updateIntentGraphics(); }
     });
   });
 
@@ -346,11 +512,32 @@
     }
     return acc / SFGS.length;
   }
+
+  // Intent alignment (readout influence)
+  function computeIntentAlignment(){
+    const V = intentVec();
+    // average direction of ring midpoints
+    let ax=0, ay=0;
+    for(const s of SFGS){
+      const vx = s.x - CENTER.x, vy = s.y - CENTER.y;
+      const L = Math.hypot(vx,vy)||1;
+      ax += vx/L; ay += vy/L;
+    }
+    const L = Math.hypot(ax,ay)||1; ax/=L; ay/=L;
+    const dot = Math.max(0, ax*V.x + ay*V.y); // [0,1]
+    return dot;
+  }
+
   function computeState(){
     const particleFactor = Math.min(1, particles.length / MAX_PARTICLES);
     const ringSymmetry   = computeRingSymmetry();
-    const coupling = Math.max(0, Math.min(1, 0.30*particleFactor + 0.25*ringSymmetry + 0.45*(+flux.value)));
-    const coherence= Math.max(0, Math.min(1, 0.45*ringSymmetry + 0.20*particleFactor + 0.35*(1 - Math.abs(+bias.value-0.5)*2)));
+    const intentAlign    = computeIntentAlignment();
+    const coupling = Math.max(0, Math.min(1,
+      0.26*particleFactor + 0.24*ringSymmetry + 0.35*(+flux.value) + 0.15*intentAlign*(+gain.value)/2
+    ));
+    const coherence= Math.max(0, Math.min(1,
+      0.42*ringSymmetry + 0.18*particleFactor + 0.30*(1 - Math.abs(+bias.value-0.5)*2) + 0.10*intentAlign
+    ));
     let readiness='Idle', cls='warn';
     if(coupling>0.75 && coherence>0.75){ readiness='Warp-Ready'; cls='ok' }
     else if(coupling>0.5 && coherence>0.5){ readiness='Aligning'; cls='warn' }
@@ -358,24 +545,47 @@
     return {coupling, coherence, readiness, cls};
   }
 
-  // ----- Animation loop (safe removal + continuous emit) -----
+  // ----- Auto-steer (CII guidance) -----
+  function autoSteerUpdate(dt){
+    if(!autoSteer.checked) return;
+    // Heuristic: find SFG with largest radial error; steer vector from that SFG toward center
+    let worst=null, worstErr=-1;
+    const R = CENTER.R;
+    for(const s of SFGS){
+      const dr = Math.abs(Math.hypot(s.x-CENTER.x, s.y-CENTER.y)-R);
+      if(dr>worstErr){ worstErr=dr; worst=s; }
+    }
+    if(!worst) return;
+    const ang = Math.atan2(CENTER.y - worst.y, CENTER.x - worst.x); // towards center from worst SFG
+    // blend bearing slowly toward desired angle
+    let current = deg2rad(+bearing.value);
+    // shortest angular difference
+    let diff = ((ang - current + Math.PI*3) % (Math.PI*2)) - Math.PI;
+    const rate = 0.9; // rad/s max turn
+    const step = Math.max(-rate*dt, Math.min(rate*dt, diff));
+    current += step;
+    let deg = current*180/Math.PI;
+    if(deg<0) deg+=360;
+    bearing.value = (deg % 360).toFixed(0);
+    o_bearing.textContent = bearing.value;
+    updateIntentGraphics();
+  }
+
+  // ----- Animation loop -----
   let running = true, last=performance.now()/1000;
   function tick(ms){
     const now=ms/1000, dt=Math.min(0.05, now-last); last=now;
 
-    // continuous streams
     continuousEmit();
 
-    // advance particles (iterate backwards so splices are safe)
+    // advance particles
     const speedScale = 0.35 + 1.6*(+flux.value);
     for(let i=particles.length-1; i>=0; i--){
       const p = particles[i];
-      p.t += p.speed * speedScale * (1 + 0.25*Math.sin(now*2 + i)); // a little shimmer
+      p.t += p.speed * speedScale * (1 + 0.25*Math.sin(now*2 + i));
       if(p.t >= 1){
-        // remove
         if(p.el && p.el.parentNode) p.el.parentNode.removeChild(p.el);
-        particles.splice(i,1);
-        continue;
+        particles.splice(i,1); continue;
       }
       try{
         const len = p.path.getTotalLength();
@@ -385,6 +595,8 @@
         p.el.setAttribute('opacity', 0.6 + 0.35*(1 - p.t));
       }catch(e){}
     }
+
+    autoSteerUpdate(dt);
 
     // meters
     const S = computeState();
@@ -403,16 +615,25 @@
     e.target.textContent = running ? 'Pause' : 'Resume';
     if(running){ last = performance.now()/1000; requestAnimationFrame(tick); }
   });
+
   document.getElementById('reset').addEventListener('click', ()=>{
+    // sliders
     bias.value=0.50; flux.value=0.80; o_bias.textContent='0.50'; o_flux.textContent='0.80';
-    // restore ring geometry
+    bearing.value=0; o_bearing.textContent='0';
+    mag.value=0.70; o_mag.textContent='0.70';
+    gain.value=0.60; o_gain.textContent='0.60';
+    focusSel.value='all'; targetSel.value='INC'; autoSteer.checked=false;
+
+    // ring geometry
     SFGS.forEach((s,i)=>{
       const a=(i/12)*Math.PI*2; s.x=CENTER.x + CENTER.R*Math.cos(a); s.y=CENTER.y + CENTER.R*Math.sin(a);
       s.g.setAttribute('transform', `translate(${s.x},${s.y})`);
     });
     for(const k in warpCounter) warpCounter[k]=0;
     updateAllEdges();
+    updateIntentGraphics();
   });
+
   document.getElementById('burst').addEventListener('click', ()=>{
     ALL.forEach(n=> burstFromNode(n, 1.4));
   });
@@ -422,7 +643,6 @@
     const e = edges[(Math.random()*edges.length)|0];
     spawnParticleOnPath(e.path, 0.9);
   }
-
 })();
 </script>
 </body>
